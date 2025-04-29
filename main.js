@@ -48,12 +48,13 @@ function getExercises() {
   });
 }
 
-// 🏋️‍♀️ Sets toevoegen voor gekozen oefening
-let exercisesInWorkout = {};  // Dit houdt het aantal sets per oefening bij.
+// 🏋️‍♀️ Sets toevoegen
+let exercisesInWorkout = {};
 
 function addSet(exerciseName) {
   const setContainer = document.createElement("div");
   setContainer.classList.add("setContainer");
+  setContainer.dataset.exercise = exerciseName;
 
   const currentSetNumber = exercisesInWorkout[exerciseName] || 1;
 
@@ -69,21 +70,13 @@ function addSet(exerciseName) {
   `;
 
   setsContainer.appendChild(setContainer);
-
-  // Verhoog het setnummer voor de gekozen oefening
   exercisesInWorkout[exerciseName] = currentSetNumber + 1;
 
-  // Voeg eventlistener toe aan de "Verwijder set" knop
-  const removeButton = setContainer.querySelector(".removeSetButton");
-  removeButton.addEventListener("click", () => removeSet(setContainer));
+  setContainer.querySelector(".removeSetButton").addEventListener("click", () => {
+    setContainer.remove();
+  });
 }
 
-// 📉 Verwijder een set
-function removeSet(setContainer) {
-  setContainer.remove();
-}
-
-// 👟 Oefening toevoegen aan workout
 addExerciseButton.addEventListener("click", () => {
   const exerciseName = exerciseSelect.value;
   if (exerciseName) {
@@ -99,66 +92,55 @@ saveButton.addEventListener("click", () => {
   const workoutDescriptionValue = workoutDescription.value.trim();
 
   if (!workoutNameValue || !workoutDescriptionValue) {
-    alert("Vul de naam en beschrijving van de workout in.");
+    alert("Vul naam en beschrijving in.");
     return;
   }
 
   const exercises = [];
-  setsContainer.querySelectorAll(".setContainer").forEach((setContainer, index) => {
-    const exerciseName = setContainer.querySelector("h4").textContent.split(" ")[0]; // Haal de naam van de oefening op
-    const weightInput = setContainer.querySelector(`#weight-${exerciseName}-${index + 1}`);
-const rirInput = setContainer.querySelector(`#rir-${exerciseName}-${index + 1}`);
-const difficultyInput = setContainer.querySelector(`#difficulty-${exerciseName}-${index + 1}`);
+  const allSetContainers = setsContainer.querySelectorAll(".setContainer");
 
-if (!weightInput || !rirInput || !difficultyInput) {
-  console.error("Een inputveld ontbreekt voor oefening:", exerciseName, "index:", index + 1);
-  return;
-}
+  allSetContainers.forEach((setContainer) => {
+    const titleParts = setContainer.querySelector("h4").textContent.split(" ");
+    const exerciseName = titleParts[0];
+    const setNumber = titleParts[2];
 
-const weight = weightInput.value;
-const rir = rirInput.value;
-const difficulty = difficultyInput.value;
+    const weightInput = setContainer.querySelector(`#weight-${exerciseName}-${setNumber}`);
+    const rirInput = setContainer.querySelector(`#rir-${exerciseName}-${setNumber}`);
+    const difficultyInput = setContainer.querySelector(`#difficulty-${exerciseName}-${setNumber}`);
+
+    if (!weightInput || !rirInput || !difficultyInput) return;
+
+    const weight = weightInput.value;
+    const rir = rirInput.value;
+    const difficulty = difficultyInput.value;
 
     if (weight && rir && difficulty) {
-      if (!exercises.some(e => e.exercise === exerciseName)) {
-        exercises.push({
-          exercise: exerciseName,
-          sets: [{
-            weight,
-            rir,
-            difficulty,
-          }]
-        });
-      } else {
-        const exercise = exercises.find(e => e.exercise === exerciseName);
-        exercise.sets.push({
-          weight,
-          rir,
-          difficulty,
-        });
+      let existingExercise = exercises.find(e => e.exercise === exerciseName);
+      if (!existingExercise) {
+        existingExercise = { exercise: exerciseName, sets: [] };
+        exercises.push(existingExercise);
       }
+      existingExercise.sets.push({ weight, rir, difficulty });
     }
   });
 
-  // 🏋️‍♀️ Opslaan in Firebase onder de gebruikersnaam
   const workoutsRef = ref(database, `users/${username}/workouts`);
   const newWorkoutRef = push(workoutsRef);
 
   set(newWorkoutRef, {
     name: workoutNameValue,
     description: workoutDescriptionValue,
-    exercises: exercises,
+    exercises,
   }).then(() => {
     console.log("Workout opgeslagen!");
     workoutName.value = "";
     workoutDescription.value = "";
     setsContainer.innerHTML = "";
-  }).catch((error) => {
-    console.error("Fout bij opslaan:", error);
-  });
+    exercisesInWorkout = {}; // 🔁 reset setnummers
+  }).catch(console.error);
 });
 
-// 📑 Werkouts ophalen en weergeven
+// 📑 Workouts laden
 function loadWorkouts() {
   const workoutsRef = ref(database, `users/${username}/workouts`);
   onValue(workoutsRef, (snapshot) => {
@@ -166,38 +148,28 @@ function loadWorkouts() {
     snapshot.forEach((childSnapshot) => {
       const workout = childSnapshot.val();
       const listItem = document.createElement("li");
-      listItem.textContent = `${workout.name}: ${workout.description}`;
-      listItem.addEventListener("click", () => {
-        showWorkoutDetails(workout);
-      });
+      listItem.textContent = workout.name;
+      listItem.addEventListener("click", () => showWorkoutDetails(workout));
       workoutList.appendChild(listItem);
     });
   });
 }
 
-// 👀 Workout details tonen onderaan het scherm
 function showWorkoutDetails(workout) {
   workoutDetailsSection.innerHTML = `
     <h3>${workout.name}</h3>
     <p>${workout.description}</p>
-    <div>
-      ${workout.exercises && Array.isArray(workout.exercises)
-        ? workout.exercises.map(ex => `
-            <div class="exerciseDetail">
-              <h4>${ex.exercise}</h4>
-              ${ex.sets.map((set, index) => `
-                <p>Set ${index + 1}: Gewicht: ${set.weight}kg, RIR: ${set.rir}, Moeilijkheid: ${set.difficulty}/10</p>
-              `).join("")}
-            </div>
-          `).join("")
-        : "<p>Geen oefeningen gevonden voor deze workout.</p>"}
-    </div>
+    ${workout.exercises.map(ex => `
+      <h4>${ex.exercise}</h4>
+      <ul>
+        ${ex.sets.map(set => `
+          <li>Gewicht: ${set.weight} kg, RIR: ${set.rir}, Moeilijkheidsgraad: ${set.difficulty}</li>
+        `).join("")}
+      </ul>
+    `).join("")}
   `;
 }
 
-
-// Start de oefeningenlijst op
+// Start alles op
 getExercises();
-
-// Laad de workouts bij het laden van de pagina
 loadWorkouts();

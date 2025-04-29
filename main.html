@@ -1,31 +1,34 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Fitness App</title>
-  <script type="module" src="main.js" defer></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    input, select { margin: 5px 0; display: block; }
+    .setContainer { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+  </style>
 </head>
 <body>
-  <h1>Fitness App</h1>
+  <h1>Welkom bij de Fitness App</h1>
 
-  <div>
-    <h2>Maak een nieuwe workout</h2>
-    <input type="text" id="workoutName" placeholder="Workout naam">
-    <input type="text" id="workoutDescription" placeholder="Workout beschrijving">
-    <h3>Oefeningen toevoegen:</h3>
-    <select id="exerciseSelect"></select>
-    <button id="addExerciseButton">Oefening toevoegen</button>
+  <h2>Nieuwe Workout</h2>
+  <input type="text" id="workoutName" placeholder="Workout naam">
+  <textarea id="workoutDescription" placeholder="Beschrijving"></textarea>
+  
+  <select id="exerciseSelect"></select>
+  <button id="addExerciseButton">Voeg oefening toe</button>
 
-    <div id="setsContainer"></div>
+  <div id="setsContainer"></div>
+  <button id="saveButton">Workout opslaan</button>
 
-    <button id="saveButton">Workout opslaan</button>
-  </div>
+  <h2>Mijn Workouts</h2>
+  <ul id="workoutList"></ul>
 
-  <div>
-    <h2>Workouts:</h2>
-    <ul id="workoutList"></ul>
-    <section id="workoutDetails"></section>
+  <h2>Workout Details</h2>
+  <div id="workoutDetails"></div>
 
-  </div>
+  <script type="module" src="main.js"></script>
 </body>
 </html>
