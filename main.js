@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getDatabase, ref, set, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-// 🔥 Firebase config
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyB0Q2ez2d9RjSOh4KmuYmXgU59mcwOkcYg",
   authDomain: "fitnessapp-2a7a9.firebaseapp.com",
@@ -15,145 +15,141 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// 👤 Gebruiker
+// 🔒 Gebruikersnaam ophalen uit localStorage
 const username = localStorage.getItem("fitnessUsername");
+
 if (!username) {
   alert("Geen gebruikersnaam gevonden. Ga terug naar de loginpagina.");
   window.location.href = "index.html";
 }
 
-// 📋 Vooraf ingestelde oefeningen
-const EXERCISES = [
-  { id: "squat", name: "Squat" },
-  { id: "bench_press", name: "Bench Press" },
-  { id: "deadlift", name: "Deadlift" },
-  { id: "overhead_press", name: "Overhead Press" }
-];
-
-// 🔽 Elementen
+// 🔽 Elementen ophalen
 const workoutName = document.getElementById("workoutName");
-const exerciseList = document.getElementById("exerciseList");
-const selectedExercisesContainer = document.getElementById("selectedExercisesContainer");
+const workoutDescription = document.getElementById("workoutDescription");
+const addExerciseButton = document.getElementById("addExerciseButton");
+const exerciseSelect = document.getElementById("exerciseSelect");
+const setsContainer = document.getElementById("setsContainer");
 const saveButton = document.getElementById("saveButton");
 const workoutList = document.getElementById("workoutList");
-const workoutDetails = document.getElementById("workoutDetails");
 
-// 📦 Toon alle oefeningen als checkbox
-EXERCISES.forEach(exercise => {
-  const label = document.createElement("label");
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.value = exercise.id;
-  checkbox.dataset.name = exercise.name;
-  checkbox.addEventListener("change", renderSelectedExercises);
-  label.appendChild(checkbox);
-  label.append(` ${exercise.name}`);
-  exerciseList.appendChild(label);
-  exerciseList.appendChild(document.createElement("br"));
-});
-
-// 🧩 Bij selectie: tonen van setvelden
-function renderSelectedExercises() {
-  selectedExercisesContainer.innerHTML = "";
-
-  const selected = [...exerciseList.querySelectorAll("input:checked")];
-  selected.forEach(checkbox => {
-    const exerciseId = checkbox.value;
-    const name = checkbox.dataset.name;
-
-    const exerciseDiv = document.createElement("div");
-    exerciseDiv.innerHTML = `<h4>${name}</h4>`;
-
-    const addSetBtn = document.createElement("button");
-    addSetBtn.textContent = "Set toevoegen";
-    exerciseDiv.appendChild(addSetBtn);
-
-    const setList = document.createElement("div");
-    exerciseDiv.appendChild(setList);
-
-    addSetBtn.addEventListener("click", () => {
-      const setDiv = document.createElement("div");
-      setDiv.innerHTML = `
-        Gewicht: <input type="number" step="0.1" class="weight"> kg |
-        RIR: <input type="number" class="rir"> |
-        Moeilijkheid (1-10): <input type="number" min="1" max="10" class="difficulty">
-      `;
-      setList.appendChild(setDiv);
+// 🏋️‍♀️ Lijst met oefeningen ophalen
+function getExercises() {
+  const exercisesRef = ref(database, "exercises");
+  onValue(exercisesRef, (snapshot) => {
+    exerciseSelect.innerHTML = "";
+    snapshot.forEach((childSnapshot) => {
+      const exercise = childSnapshot.val();
+      const option = document.createElement("option");
+      option.value = exercise.name;
+      option.textContent = exercise.name;
+      exerciseSelect.appendChild(option);
     });
-
-    selectedExercisesContainer.appendChild(exerciseDiv);
   });
 }
+
+// 🏋️‍♀️ Sets toevoegen voor gekozen oefening
+const exercisesInWorkout = {};
+
+function addSet(exerciseName) {
+  const setContainer = document.createElement("div");
+  setContainer.classList.add("setContainer");
+
+  const currentSetNumber = exercisesInWorkout[exerciseName] || 1;
+
+  setContainer.innerHTML = `
+    <h4>${exerciseName} Set ${currentSetNumber}</h4>
+    <label for="weight-${exerciseName}-${currentSetNumber}">Gewicht:</label>
+    <input type="number" id="weight-${exerciseName}-${currentSetNumber}" placeholder="Gewicht (kg)">
+    <label for="rir-${exerciseName}-${currentSetNumber}">RIR:</label>
+    <input type="number" id="rir-${exerciseName}-${currentSetNumber}" placeholder="RIR">
+    <label for="difficulty-${exerciseName}-${currentSetNumber}">Moeilijkheidsgraad:</label>
+    <input type="number" id="difficulty-${exerciseName}-${currentSetNumber}" placeholder="Moeilijkheidsgraad (1-10)">
+    <button class="removeSetButton" onclick="removeSet(this)">Verwijder set</button>
+  `;
+
+  setsContainer.appendChild(setContainer);
+
+  // Verhoog het setnummer voor de gekozen oefening
+  exercisesInWorkout[exerciseName] = currentSetNumber + 1;
+}
+
+// 📉 Verwijder een set
+function removeSet(button) {
+  const setContainer = button.closest(".setContainer");
+  setContainer.remove();
+}
+
+// 👟 Oefening toevoegen aan workout
+addExerciseButton.addEventListener("click", () => {
+  const exerciseName = exerciseSelect.value;
+  if (exerciseName) {
+    addSet(exerciseName);
+  } else {
+    alert("Kies een oefening.");
+  }
+});
 
 // 💾 Workout opslaan
 saveButton.addEventListener("click", () => {
-  const name = workoutName.value.trim();
-  if (!name) {
-    alert("Geef een naam voor je workout in.");
+  const workoutNameValue = workoutName.value.trim();
+  const workoutDescriptionValue = workoutDescription.value.trim();
+
+  if (!workoutNameValue || !workoutDescriptionValue) {
+    alert("Vul de naam en beschrijving van de workout in.");
     return;
   }
 
-  const workoutData = { name, exercises: [] };
-  const selected = [...exerciseList.querySelectorAll("input:checked")];
+  const exercises = [];
+  setsContainer.querySelectorAll(".setContainer").forEach((setContainer, index) => {
+    const exerciseName = setContainer.querySelector("h4").textContent.split(" ")[0]; // Haal de naam van de oefening op
+    const weight = setContainer.querySelector(`#weight-${exerciseName}-${index + 1}`).value;
+    const rir = setContainer.querySelector(`#rir-${exerciseName}-${index + 1}`).value;
+    const difficulty = setContainer.querySelector(`#difficulty-${exerciseName}-${index + 1}`).value;
 
-  selected.forEach((checkbox, i) => {
-    const exerciseName = checkbox.dataset.name;
-    const exerciseDiv = selectedExercisesContainer.children[i];
-    const setInputs = [...exerciseDiv.querySelectorAll("div > div")];
-    const sets = setInputs.map(setDiv => {
-      return {
-        weight: setDiv.querySelector(".weight").value,
-        rir: setDiv.querySelector(".rir").value,
-        difficulty: setDiv.querySelector(".difficulty").value
-      };
+    exercises.push({
+      exercise: exerciseName,
+      sets: [{
+        weight,
+        rir,
+        difficulty,
+      }]
     });
-    workoutData.exercises.push({ name: exerciseName, sets });
   });
 
+  // 🏋️‍♀️ Opslaan in Firebase onder de gebruikersnaam
   const workoutsRef = ref(database, `users/${username}/workouts`);
   const newWorkoutRef = push(workoutsRef);
-  set(newWorkoutRef, workoutData).then(() => {
-    alert("Workout opgeslagen!");
+
+  set(newWorkoutRef, {
+    name: workoutNameValue,
+    description: workoutDescriptionValue,
+    exercises: exercises,
+  }).then(() => {
+    console.log("Workout opgeslagen!");
     workoutName.value = "";
-    exerciseList.querySelectorAll("input:checked").forEach(cb => cb.checked = false);
-    selectedExercisesContainer.innerHTML = "";
-    getWorkoutData(); // refresh
-  }).catch(err => {
-    console.error("Fout bij opslaan:", err);
+    workoutDescription.value = "";
+    setsContainer.innerHTML = "";
+  }).catch((error) => {
+    console.error("Fout bij opslaan:", error);
   });
 });
 
-// 📥 Workout lijst ophalen
-function getWorkoutData() {
+// 📑 Werkouts ophalen en weergeven
+function loadWorkouts() {
   const workoutsRef = ref(database, `users/${username}/workouts`);
   onValue(workoutsRef, (snapshot) => {
     workoutList.innerHTML = "";
-    workoutDetails.innerHTML = "";
-
-    snapshot.forEach(child => {
-      const workout = child.val();
-      const key = child.key;
-
-      const li = document.createElement("li");
-      li.textContent = workout.name;
-      li.style.cursor = "pointer";
-      li.addEventListener("click", () => showWorkoutDetails(workout));
-      workoutList.appendChild(li);
+    snapshot.forEach((childSnapshot) => {
+      const workout = childSnapshot.val();
+      const listItem = document.createElement("li");
+      listItem.textContent = `${workout.name}: ${workout.description}`;
+      workoutList.appendChild(listItem);
     });
   });
 }
 
-// 📤 Details van workout tonen
-function showWorkoutDetails(workout) {
-  workoutDetails.innerHTML = `<h3>${workout.name}</h3>`;
-  workout.exercises.forEach(ex => {
-    const div = document.createElement("div");
-    div.innerHTML = `<strong>${ex.name}</strong><br>`;
-    ex.sets.forEach((set, i) => {
-      div.innerHTML += `Set ${i + 1}: ${set.weight} kg, RIR: ${set.rir}, Moeilijkheid: ${set.difficulty}<br>`;
-    });
-    workoutDetails.appendChild(div);
-  });
-}
+// Start de oefeningenlijst op
+getExercises();
 
-getWorkoutData();
+// Laad de workouts bij het laden van de pagina
+loadWorkouts();

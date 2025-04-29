@@ -9,20 +9,21 @@
   <h1>Fitness App</h1>
 
   <div>
+    <h2>Maak een nieuwe workout</h2>
     <input type="text" id="workoutName" placeholder="Workout naam">
-    
-    <h3>Kies oefeningen:</h3>
-    <div id="exerciseList"></div>
+    <input type="text" id="workoutDescription" placeholder="Workout beschrijving">
+    <h3>Oefeningen toevoegen:</h3>
+    <select id="exerciseSelect"></select>
+    <button id="addExerciseButton">Oefening toevoegen</button>
 
-    <div id="selectedExercisesContainer"></div>
+    <div id="setsContainer"></div>
 
     <button id="saveButton">Workout opslaan</button>
   </div>
 
   <div>
-    <h2>Jouw Workouts:</h2>
+    <h2>Workouts:</h2>
     <ul id="workoutList"></ul>
-    <div id="workoutDetails"></div>
   </div>
 </body>
 </html>
