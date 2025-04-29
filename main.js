@@ -31,6 +31,7 @@ const exerciseSelect = document.getElementById("exerciseSelect");
 const setsContainer = document.getElementById("setsContainer");
 const saveButton = document.getElementById("saveButton");
 const workoutList = document.getElementById("workoutList");
+const workoutDetailsSection = document.getElementById("workoutDetails");
 
 // 🏋️‍♀️ Lijst met oefeningen ophalen
 function getExercises() {
@@ -48,7 +49,7 @@ function getExercises() {
 }
 
 // 🏋️‍♀️ Sets toevoegen voor gekozen oefening
-const exercisesInWorkout = {};
+let exercisesInWorkout = {};  // Dit houdt het aantal sets per oefening bij.
 
 function addSet(exerciseName) {
   const setContainer = document.createElement("div");
@@ -64,18 +65,21 @@ function addSet(exerciseName) {
     <input type="number" id="rir-${exerciseName}-${currentSetNumber}" placeholder="RIR">
     <label for="difficulty-${exerciseName}-${currentSetNumber}">Moeilijkheidsgraad:</label>
     <input type="number" id="difficulty-${exerciseName}-${currentSetNumber}" placeholder="Moeilijkheidsgraad (1-10)">
-    <button class="removeSetButton" onclick="removeSet(this)">Verwijder set</button>
+    <button class="removeSetButton">Verwijder set</button>
   `;
 
   setsContainer.appendChild(setContainer);
 
   // Verhoog het setnummer voor de gekozen oefening
   exercisesInWorkout[exerciseName] = currentSetNumber + 1;
+
+  // Voeg eventlistener toe aan de "Verwijder set" knop
+  const removeButton = setContainer.querySelector(".removeSetButton");
+  removeButton.addEventListener("click", () => removeSet(setContainer));
 }
 
 // 📉 Verwijder een set
-function removeSet(button) {
-  const setContainer = button.closest(".setContainer");
+function removeSet(setContainer) {
   setContainer.remove();
 }
 
@@ -102,18 +106,38 @@ saveButton.addEventListener("click", () => {
   const exercises = [];
   setsContainer.querySelectorAll(".setContainer").forEach((setContainer, index) => {
     const exerciseName = setContainer.querySelector("h4").textContent.split(" ")[0]; // Haal de naam van de oefening op
-    const weight = setContainer.querySelector(`#weight-${exerciseName}-${index + 1}`).value;
-    const rir = setContainer.querySelector(`#rir-${exerciseName}-${index + 1}`).value;
-    const difficulty = setContainer.querySelector(`#difficulty-${exerciseName}-${index + 1}`).value;
+    const weightInput = setContainer.querySelector(`#weight-${exerciseName}-${index + 1}`);
+const rirInput = setContainer.querySelector(`#rir-${exerciseName}-${index + 1}`);
+const difficultyInput = setContainer.querySelector(`#difficulty-${exerciseName}-${index + 1}`);
 
-    exercises.push({
-      exercise: exerciseName,
-      sets: [{
-        weight,
-        rir,
-        difficulty,
-      }]
-    });
+if (!weightInput || !rirInput || !difficultyInput) {
+  console.error("Een inputveld ontbreekt voor oefening:", exerciseName, "index:", index + 1);
+  return;
+}
+
+const weight = weightInput.value;
+const rir = rirInput.value;
+const difficulty = difficultyInput.value;
+
+    if (weight && rir && difficulty) {
+      if (!exercises.some(e => e.exercise === exerciseName)) {
+        exercises.push({
+          exercise: exerciseName,
+          sets: [{
+            weight,
+            rir,
+            difficulty,
+          }]
+        });
+      } else {
+        const exercise = exercises.find(e => e.exercise === exerciseName);
+        exercise.sets.push({
+          weight,
+          rir,
+          difficulty,
+        });
+      }
+    }
   });
 
   // 🏋️‍♀️ Opslaan in Firebase onder de gebruikersnaam
@@ -143,10 +167,34 @@ function loadWorkouts() {
       const workout = childSnapshot.val();
       const listItem = document.createElement("li");
       listItem.textContent = `${workout.name}: ${workout.description}`;
+      listItem.addEventListener("click", () => {
+        showWorkoutDetails(workout);
+      });
       workoutList.appendChild(listItem);
     });
   });
 }
+
+// 👀 Workout details tonen onderaan het scherm
+function showWorkoutDetails(workout) {
+  workoutDetailsSection.innerHTML = `
+    <h3>${workout.name}</h3>
+    <p>${workout.description}</p>
+    <div>
+      ${workout.exercises && Array.isArray(workout.exercises)
+        ? workout.exercises.map(ex => `
+            <div class="exerciseDetail">
+              <h4>${ex.exercise}</h4>
+              ${ex.sets.map((set, index) => `
+                <p>Set ${index + 1}: Gewicht: ${set.weight}kg, RIR: ${set.rir}, Moeilijkheid: ${set.difficulty}/10</p>
+              `).join("")}
+            </div>
+          `).join("")
+        : "<p>Geen oefeningen gevonden voor deze workout.</p>"}
+    </div>
+  `;
+}
+
 
 // Start de oefeningenlijst op
 getExercises();
