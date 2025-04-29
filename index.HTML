@@ -1,101 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fitness App</title>
+  <meta charset="UTF-8">
+  <title>Fitness App</title>
+  <script type="module" src="main.js" defer></script>
 </head>
 <body>
+  <h1>Fitness App</h1>
 
-    <h1>Fitness Tracker</h1>
+  <div>
+    <input type="text" id="workoutName" placeholder="Workout naam">
+    <input type="text" id="workoutDescription" placeholder="Workout beschrijving">
+    <button id="saveButton">Workout opslaan</button>
+  </div>
 
-    <div id="app">
-        <!-- Voeg hier je formulier, inputvelden, en knoppen toe -->
+  <div>
+    <h2>Workouts:</h2>
+    <ul id="workoutList"></ul>
+  </div>
 
-        <!-- Invoer voor oefening, sets, gewicht en moeilijkheidsgraad -->
-        <form id="workoutForm">
-            <label for="exercise">Oefening:</label>
-            <select id="exercise" name="exercise">
-                <option value="Push-up">Push-up</option>
-                <option value="Squat">Squat</option>
-                <option value="Bench Press">Bench Press</option>
-                <!-- Voeg hier andere oefeningen toe -->
-            </select>
-
-            <label for="sets">Aantal Sets:</label>
-            <input type="number" id="sets" name="sets" required>
-
-            <label for="weight">Gewicht (kg):</label>
-            <input type="number" id="weight" name="weight" required>
-
-            <label for="difficulty">Moeilijkheidsgraad (1-10):</label>
-            <input type="number" id="difficulty" name="difficulty" min="1" max="10" required>
-
-            <label for="reps">Aantal Reps (RIR):</label>
-            <input type="number" id="reps" name="reps" required>
-
-            <button type="submit" id="submitButton">Verzenden</button>
-        </form>
-
-        <!-- Hier kun je een feedback sectie toevoegen voor gebruikers -->
-        <div id="feedback"></div>
-    </div>
-
-    <!-- Laad Firebase via modules -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-
-        // Firebase-configuratie
-        const firebaseConfig = {
-            apiKey: "AIzaSyB0Q2ez2d9RjSOh4KmuYmXgU59mcwOkcYg",
-            authDomain: "fitnessapp-2a7a9.firebaseapp.com",
-            projectId: "fitnessapp-2a7a9",
-            storageBucket: "fitnessapp-2a7a9.firebasestorage.app",
-            messagingSenderId: "109645478176",
-            appId: "1:109645478176:web:5b36052d4c798cada83f45"
-        };
-
-        // Initialiseer Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        // Functie om de ingevulde workoutgegevens naar Firebase te sturen
-        document.getElementById('workoutForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // Haal de ingevoerde gegevens op
-            const exercise = document.getElementById('exercise').value;
-            const sets = document.getElementById('sets').value;
-            const weight = document.getElementById('weight').value;
-            const difficulty = document.getElementById('difficulty').value;
-            const reps = document.getElementById('reps').value;
-
-            // Maak een uniek ID voor deze workout (bijvoorbeeld gebaseerd op tijdstempel)
-            const workoutId = new Date().getTime().toString();
-
-            // Sla de workoutdata op in Firebase
-            const workoutRef = ref(database, 'workouts/' + workoutId);
-            set(workoutRef, {
-                exercise: exercise,
-                sets: sets,
-                weight: weight,
-                difficulty: difficulty,
-                reps: reps,
-                date: new Date().toLocaleDateString()
-            });
-
-            // Feedback voor de gebruiker
-            document.getElementById('feedback').innerText = "Workoutgegevens succesvol opgeslagen!";
-            
-            // Maak het formulier leeg
-            document.getElementById('workoutForm').reset();
-        });
-    </script>
-
-    <!-- Voeg je eigen script toe -->
-    <script src="main.js" type="module"></script>
-    
 </body>
 </html>
