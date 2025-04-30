@@ -22,16 +22,16 @@
     }
 
     #calendar {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 20px;
+      max-width: 100%;
+      margin: 20px auto;
+      padding: 10px;
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     }
 
     #workoutDetails {
-      max-width: 900px;
+      max-width: 100%;
       margin: 20px auto;
       padding: 20px;
       background: #ffffff;
@@ -47,17 +47,39 @@
     #backBtn {
       display: block;
       margin: 30px auto;
-      padding: 10px 20px;
+      padding: 12px 25px;
       font-size: 16px;
       background-color: #007BFF;
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      text-align: center;
     }
 
     #backBtn:hover {
       background-color: #0056b3;
+    }
+
+    /* Mobiele optimalisatie */
+    @media (max-width: 600px) {
+      #calendar {
+        padding: 10px;
+      }
+
+      #workoutDetails {
+        margin: 10px 10px;
+        padding: 15px;
+      }
+
+      #workoutDetails h3 {
+        font-size: 20px;
+      }
+
+      #backBtn {
+        padding: 10px 20px;
+        font-size: 14px;
+      }
     }
   </style>
 </head>
