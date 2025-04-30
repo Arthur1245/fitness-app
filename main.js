@@ -15,15 +15,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// 🔒 Gebruikersnaam ophalen uit localStorage
 const username = localStorage.getItem("fitnessUsername");
-
 if (!username) {
   alert("Geen gebruikersnaam gevonden. Ga terug naar de loginpagina.");
   window.location.href = "index.html";
 }
 
-// 🔽 Elementen ophalen
 const workoutName = document.getElementById("workoutName");
 const workoutDescription = document.getElementById("workoutDescription");
 const addExerciseButton = document.getElementById("addExerciseButton");
@@ -33,7 +30,6 @@ const saveButton = document.getElementById("saveButton");
 const workoutList = document.getElementById("workoutList");
 const workoutDetailsSection = document.getElementById("workoutDetails");
 
-// 🏋️‍♀️ Lijst met oefeningen ophalen
 function getExercises() {
   const exercisesRef = ref(database, "exercises");
   onValue(exercisesRef, (snapshot) => {
@@ -48,24 +44,23 @@ function getExercises() {
   });
 }
 
-// 🏋️‍♀️ Sets toevoegen
 let exercisesInWorkout = {};
 
 function addSet(exerciseName) {
+  const currentSetNumber = exercisesInWorkout[exerciseName] || 1;
+  const setId = `${exerciseName.replaceAll(" ", "_")}-${currentSetNumber}`;
+
   const setContainer = document.createElement("div");
   setContainer.classList.add("setContainer");
-  setContainer.dataset.exercise = exerciseName;
-
-  const currentSetNumber = exercisesInWorkout[exerciseName] || 1;
 
   setContainer.innerHTML = `
-    <h4>${exerciseName} Set ${currentSetNumber}</h4>
-    <label for="weight-${exerciseName}-${currentSetNumber}">Gewicht:</label>
-    <input type="number" id="weight-${exerciseName}-${currentSetNumber}" placeholder="Gewicht (kg)">
-    <label for="rir-${exerciseName}-${currentSetNumber}">RIR:</label>
-    <input type="number" id="rir-${exerciseName}-${currentSetNumber}" placeholder="RIR">
-    <label for="difficulty-${exerciseName}-${currentSetNumber}">Moeilijkheidsgraad:</label>
-    <input type="number" id="difficulty-${exerciseName}-${currentSetNumber}" placeholder="Moeilijkheidsgraad (1-10)">
+    <h4>${exerciseName} - Set ${currentSetNumber}</h4>
+    <label>Gewicht:</label>
+    <input type="number" id="weight-${setId}" placeholder="Gewicht (kg)">
+    <label>RIR:</label>
+    <input type="number" id="rir-${setId}" placeholder="RIR">
+    <label>Moeilijkheidsgraad:</label>
+    <input type="number" id="difficulty-${setId}" placeholder="Moeilijkheidsgraad (1-10)">
     <button class="removeSetButton">Verwijder set</button>
   `;
 
@@ -86,7 +81,6 @@ addExerciseButton.addEventListener("click", () => {
   }
 });
 
-// 💾 Workout opslaan
 saveButton.addEventListener("click", () => {
   const workoutNameValue = workoutName.value.trim();
   const workoutDescriptionValue = workoutDescription.value.trim();
@@ -96,51 +90,58 @@ saveButton.addEventListener("click", () => {
     return;
   }
 
-  const exercises = [];
+  const exercises = {};
   const allSetContainers = setsContainer.querySelectorAll(".setContainer");
 
   allSetContainers.forEach((setContainer) => {
-    const titleParts = setContainer.querySelector("h4").textContent.split(" ");
-    const exerciseName = titleParts[0];
-    const setNumber = titleParts[2];
+    const h4 = setContainer.querySelector("h4").textContent;
+    const exerciseName = h4.split(" - Set ")[0];
 
-    const weightInput = setContainer.querySelector(`#weight-${exerciseName}-${setNumber}`);
-    const rirInput = setContainer.querySelector(`#rir-${exerciseName}-${setNumber}`);
-    const difficultyInput = setContainer.querySelector(`#difficulty-${exerciseName}-${setNumber}`);
-
-    if (!weightInput || !rirInput || !difficultyInput) return;
+    const setId = `${exerciseName.replaceAll(" ", "_")}-${exercisesInWorkout[exerciseName] - 1}`;
+    const weightInput = setContainer.querySelector(`[id^="weight-"]`);
+    const rirInput = setContainer.querySelector(`[id^="rir-"]`);
+    const difficultyInput = setContainer.querySelector(`[id^="difficulty-"]`);
 
     const weight = weightInput.value;
     const rir = rirInput.value;
     const difficulty = difficultyInput.value;
 
     if (weight && rir && difficulty) {
-      let existingExercise = exercises.find(e => e.exercise === exerciseName);
-      if (!existingExercise) {
-        existingExercise = { exercise: exerciseName, sets: [] };
-        exercises.push(existingExercise);
+      if (!exercises[exerciseName]) {
+        exercises[exerciseName] = [];
       }
-      existingExercise.sets.push({ weight, rir, difficulty });
+      exercises[exerciseName].push({ weight, rir, difficulty });
     }
   });
+
+  const formattedExercises = Object.entries(exercises).map(([name, sets]) => ({
+    exercise: name,
+    sets
+  }));
 
   const workoutsRef = ref(database, `users/${username}/workouts`);
   const newWorkoutRef = push(workoutsRef);
 
+  const now = new Date();
+  const date = now.toISOString().split("T")[0];
+  const time = now.toTimeString().split(":").slice(0, 2).join(":");
+  const datetime = `${date}T${time}`;
+
   set(newWorkoutRef, {
     name: workoutNameValue,
     description: workoutDescriptionValue,
-    exercises,
+    date,
+    datetime,
+    exercises: formattedExercises
   }).then(() => {
     console.log("Workout opgeslagen!");
     workoutName.value = "";
     workoutDescription.value = "";
     setsContainer.innerHTML = "";
-    exercisesInWorkout = {}; // 🔁 reset setnummers
+    exercisesInWorkout = {};
   }).catch(console.error);
 });
 
-// 📑 Workouts laden
 function loadWorkouts() {
   const workoutsRef = ref(database, `users/${username}/workouts`);
   onValue(workoutsRef, (snapshot) => {
@@ -156,6 +157,10 @@ function loadWorkouts() {
 }
 
 function showWorkoutDetails(workout) {
+  if (!Array.isArray(workout.exercises)) {
+    workout.exercises = [];
+  }
+
   workoutDetailsSection.innerHTML = `
     <h3>${workout.name}</h3>
     <p>${workout.description}</p>
@@ -170,6 +175,5 @@ function showWorkoutDetails(workout) {
   `;
 }
 
-// Start alles op
 getExercises();
 loadWorkouts();
