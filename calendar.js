@@ -65,7 +65,8 @@ const calendar = new FullCalendar.Calendar(calendarEl, {
         <h4>${exercise.exercise}</h4>
         <ul>
           ${exercise.sets.map(set => `
-            <li>Gewicht: ${set.weight} kg, RIR: ${set.rir}, Moeilijkheidsgraad: ${set.difficulty}</li>
+            <li>Gewicht: ${set.weight} kg, Hoeveelheid reps: ${set.reps}, RIR: ${set.rir}</li>
+
           `).join("")}
         </ul>
       `;

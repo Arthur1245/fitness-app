@@ -54,15 +54,15 @@ function addSet(exerciseName) {
   setContainer.classList.add("setContainer");
 
   setContainer.innerHTML = `
-    <h4>${exerciseName} - Set ${currentSetNumber}</h4>
-    <label>Gewicht:</label>
-    <input type="number" id="weight-${setId}" placeholder="Gewicht (kg)">
-    <label>RIR:</label>
-    <input type="number" id="rir-${setId}" placeholder="RIR">
-    <label>Moeilijkheidsgraad:</label>
-    <input type="number" id="difficulty-${setId}" placeholder="Moeilijkheidsgraad (1-10)">
-    <button class="removeSetButton">Verwijder set</button>
-  `;
+  <h4>${exerciseName} - Set ${currentSetNumber}</h4>
+  <label>Gewicht:</label>
+  <input type="number" id="weight-${setId}" placeholder="Gewicht (kg)">
+  <label>Hoeveelheid reps:</label>
+  <input type="number" id="reps-${setId}" placeholder="Aantal reps">
+  <label>RIR:</label>
+  <input type="number" id="rir-${setId}" placeholder="RIR">
+  <button class="removeSetButton">Verwijder set</button>
+`;
 
   setsContainer.appendChild(setContainer);
   exercisesInWorkout[exerciseName] = currentSetNumber + 1;
@@ -100,17 +100,17 @@ saveButton.addEventListener("click", () => {
     const setId = `${exerciseName.replaceAll(" ", "_")}-${exercisesInWorkout[exerciseName] - 1}`;
     const weightInput = setContainer.querySelector(`[id^="weight-"]`);
     const rirInput = setContainer.querySelector(`[id^="rir-"]`);
-    const difficultyInput = setContainer.querySelector(`[id^="difficulty-"]`);
+    const repsInput = setContainer.querySelector(`[id^="reps-"]`);
 
     const weight = weightInput.value;
     const rir = rirInput.value;
-    const difficulty = difficultyInput.value;
+    const reps = repsInput.value;
 
-    if (weight && rir && difficulty) {
+    if (weight && rir && reps) {
       if (!exercises[exerciseName]) {
         exercises[exerciseName] = [];
       }
-      exercises[exerciseName].push({ weight, rir, difficulty });
+      exercises[exerciseName].push({ weight, rir, reps });
     }
   });
 
@@ -168,7 +168,8 @@ function showWorkoutDetails(workout) {
       <h4>${ex.exercise}</h4>
       <ul>
         ${ex.sets.map(set => `
-          <li>Gewicht: ${set.weight} kg, RIR: ${set.rir}, Moeilijkheidsgraad: ${set.difficulty}</li>
+          <li>Gewicht: ${set.weight} kg, Hoeveelheid reps: ${set.reps}, RIR: ${set.rir}</li>
+
         `).join("")}
       </ul>
     `).join("")}
